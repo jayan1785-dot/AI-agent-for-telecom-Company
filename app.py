@@ -14,24 +14,9 @@ st.markdown(
 
 st.title("📞 Verizon Customer Service AI Agent")
 
-# Load a supported model (text generation)
-chatbot = pipeline("text-generation", model="facebook/blenderbot-400M-distill")
+# Load a stable text2text model
+chatbot = pipeline("text2text-generation", model="google/flan-t5-small")
 
 # Keep conversation history
 if "history" not in st.session_state:
-    st.session_state.history = []
-
-user_input = st.text_input("Ask me anything:")
-
-if user_input:
-    response = chatbot(user_input, max_length=100, num_return_sequences=1)
-    bot_reply = response[0]["generated_text"]
-    st.session_state.history.append(("You", user_input))
-    st.session_state.history.append(("Agent", bot_reply))
-
-# Display conversation
-for speaker, msg in st.session_state.history:
-    if speaker == "You":
-        st.write(f"👤 {speaker}: {msg}")
-    else:
-        st.write(f"🤖 {speaker}: {msg}")
+    st.session_state.history =
