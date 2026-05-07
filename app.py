@@ -2,11 +2,14 @@ import streamlit as st
 from transformers import pipeline
 
 # Verizon-style branding
+st.set_page_config(page_title="Verizon AI Agent", page_icon="📞")
+
 st.markdown(
     """
     <style>
     .main { background-color: #ffffff; color: #000000; }
-    h1 { color: #e60000; } /* Verizon red */
+    h1 { color: #cd040b; font-weight: bold; } /* Verizon brand red */
+    .stChatMessage { border-radius: 10px; }
     </style>
     """,
     unsafe_allow_html=True
@@ -14,27 +17,42 @@ st.markdown(
 
 st.title("📞 Verizon Customer Service AI Agent")
 
-# Load a stable model (Flan-T5 works well for Q&A)
-chatbot = pipeline("text2text-generation", model="google/flan-t5-small")
+# Cache the model so it doesn't reload on every interaction
+@st.cache_resource
+def load_model():
+    return pipeline("text2text-generation", model="google/flan-t5-small")
 
-# Keep conversation history
+chatbot = load_model()
+
+# Initialize session state for history
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# User input
-user_input = st.text_input("Ask me anything:")
+# Display conversation history using modern chat UI
+for message in st.session_state.history:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-if user_input:
-    response = chatbot(user_input, max_length=100)
-    bot_reply = response[0]["generated_text"]
+# User input using st.chat_input
+if prompt := st.chat_input("How can I help you today?"):
+    
+    # Display user message in chat message container
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    
+    # Add user message to chat history
+    st.session_state.history.append({"role": "user", "content": prompt})
 
-    # Save conversation
-    st.session_state.history.append(("You", user_input))
-    st.session_state.history.append(("Agent", bot_reply))
+    # Generate AI response
+    with st.spinner("Agent is typing..."):
+        # We add a simple prefix to help the model understand context
+        formatted_prompt = f"answer this customer service query: {prompt}"
+        response = chatbot(formatted_prompt, max_length=100)
+        bot_reply = response[0]["generated_text"]
 
-# Display conversation
-for speaker, msg in st.session_state.history:
-    if speaker == "You":
-        st.write(f"👤 {speaker}: {msg}")
-    else:
-        st.write(f"🤖 {speaker}: {msg}")
+    # Display assistant response in chat message container
+    with st.chat_message("assistant"):
+        st.markdown(bot_reply)
+    
+    # Add assistant response to chat history
+    st.session_state.history.append({"role": "assistant", "content": bot_reply})
