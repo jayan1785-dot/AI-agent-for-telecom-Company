@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import pipeline, Conversation
+from transformers import pipeline
 
 # Verizon-style branding
 st.markdown(
@@ -14,18 +14,24 @@ st.markdown(
 
 st.title("📞 Verizon Customer Service AI Agent")
 
-# Load conversational model
+# Load a conversational model
 chatbot = pipeline("conversational", model="facebook/blenderbot-400M-distill")
 
 # Keep conversation history
-if "conversation" not in st.session_state:
-    st.session_state.conversation = Conversation()
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-# User input
 user_input = st.text_input("Ask me anything:")
 
 if user_input:
-    st.session_state.conversation.add_user_input(user_input)
-    response = chatbot(st.session_state.conversation)
-    bot_reply = response.generated_responses[-1]
-    st.write(f"🤖 Agent: {bot_reply}")
+    response = chatbot(user_input, max_length=100)
+    bot_reply = response[0]["generated_text"]
+    st.session_state.history.append(("You", user_input))
+    st.session_state.history.append(("Agent", bot_reply))
+
+# Display conversation
+for speaker, msg in st.session_state.history:
+    if speaker == "You":
+        st.write(f"👤 {speaker}: {msg}")
+    else:
+        st.write(f"🤖 {speaker}: {msg}")
